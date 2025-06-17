@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../app/generated/prisma" // Remove or comment out this line
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  url       String
+  altText   String?
+  createdAt DateTime @default(now())
+
+  slides    Slide[]
+  products  Product[]
+  articlesCover   Article[] @relation("ArticleCoverMedia")
+  articlesBanner  Article[] @relation("ArticleBannerMedia")
+  articleContents ArticleContent[]
+}
+
+model Slide {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  link        String?
+  createdAt   DateTime @default(now())
+
+  mediaId     String?
+  media       Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+}
+
+model Product {
+  id                     String   @id @default(uuid())
+  title                  String
+  normalPrice            Float
+  specialPrice           Float?
+  mainRating             Int      @default(0) // 1-5 stars
+  qualityRating          Int      @default(0) // 1-5 stars
+  performanceRating      Int      @default(0) // 1-5 stars
+  valueRating            Int      @default(0) // 1-5 stars
+  qualityRatingLabel     String   @default("คุณภาพ")
+  performanceRatingLabel String   @default("ประสิทธิภาพ")
+  valueRatingLabel       String   @default("ความคุ้มค่า")
+  description            String?
+  productLink            String
+  comparePriceLink       String
+  createdAt              DateTime @default(now())
+
+  coverMediaId String?
+  coverMedia   Media?    @relation(fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  articleContents ArticleContent[]
+}
+
+model Article {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String? @unique
+  description   String?
+  createdAt     DateTime @default(now())
+
+  coverMediaId  String?
+  coverMedia    Media?    @relation("ArticleCoverMedia", fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  bannerMediaId String?
+  bannerMedia   Media?    @relation("ArticleBannerMedia", fields: [bannerMediaId], references: [id], onDelete: SetNull)
+
+  contents      ArticleContent[]
+}
+
+enum ArticleContentType {
+  TEXT
+  IMAGE
+  PRODUCT
+}
+
+model ArticleContent {
+  id        String             @id @default(uuid())
+  type      ArticleContentType
+  order     Int
+  text      String?
+  productTag String?
+  createdAt DateTime           @default(now())
+
+  mediaId   String?
+  media     Media?             @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+
+  productId String?
+  product   Product?           @relation(fields: [productId], references: [id])
+
+  articleId String
+  article   Article            @relation(fields: [articleId], references: [id])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String   @default("")
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+}
